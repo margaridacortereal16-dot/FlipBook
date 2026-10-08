@@ -1,2 +1,2 @@
-# Toulouse
-Aplicativo que é um guia de viagem para Toulouse
+# Flipbook
+Aplicativo para o jornal do JI

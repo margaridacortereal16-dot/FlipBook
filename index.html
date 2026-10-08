@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Traquinices e Companhia - Folheia & Partilha</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Comic Neue e Fredoka para toque amigável e acolhedor -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- QRCode.js para gerar QR codes instantâneos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- PDF.js para carregar e converter PDFs em imagens diretamente no browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <!-- StPageFlip (Page-Flip) CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
+
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+      background-color: #F8FAFC;
+    }
+    h1, h2, h3, .font-heading {
+      font-family: 'Fredoka', cursive, sans-serif;
+    }
+    
+    /* Personalização do livro PageFlip */
+    .flip-book {
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 0 auto;
+      background: #FFFFFF;
+    }
+
+    .page {
+      background-color: #FFFFFF;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.05);
+      border: 1px solid #F1F5F9;
+      user-select: none;
+    }
+
+    .page-hard {
+      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+      color: #92400E;
+      font-weight: bold;
+      border: 2px solid #F59E0B;
+    }
+
+    .page-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .page-content img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    /* Animação suave para modal e notificações */
+    .fade-enter {
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Efeito de papel suave */
+    .texture-paper {
+      background-color: #fffdfa;
+      background-image: radial-gradient(#e5e7eb 0.75px, transparent 0.75px);
+      background-size: 14px 14px;
+    }
+
+    /* Ocultar barra de rolagem mas manter navegação */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col antialiased selection:bg-amber-200">
+
+  <!-- Top Bar / Cabeçalho -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-amber-100 sticky top-0 z-40 px-4 py-3 sm:px-6 shadow-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- Logótipo e Título -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-amber-200">
+          <i data-lucide="book-open-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
+              O Meu Jornalinho <span class="hidden sm:inline-block text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold border border-amber-200">Digital</span>
+            </h1>
+            <!-- Seletor de Jornal (Modo Educador) -->
+            <select id="journalSelector" class="hidden sm:inline-block bg-amber-50 border border-amber-200 text-amber-900 font-bold text-xs rounded-xl px-2.5 py-1 focus:ring-2 focus:ring-amber-400 focus:outline-none cursor-pointer">
+              <!-- Opções injetadas dinamicamente -->
+            </select>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Jardim de Infância Alexandre Rodrigues Ferreira</p>
+        </div>
+      </div>
+
+      <!-- Controlos do Cabeçalho -->
+      <div class="flex items-center gap-2">
+        <!-- Botão Novo Jornal (Apenas no Modo Educador) -->
+        <button id="newJournalBtn" title="Criar Nova Edição do Jornal" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 font-semibold text-xs transition shadow-xs">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-600"></i>
+          <span>Novo Jornal</span>
+        </button>
+
+        <!-- Alternar Som -->
+        <button id="toggleSoundBtn" title="Ativar/Desativar som de virar folha" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition flex items-center justify-center">
+          <i data-lucide="volume-2" id="soundIcon" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Botão Alternar Modo Leitura / Edição -->
+        <button id="toggleModeBtn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition shadow-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200">
+          <i data-lucide="glasses" class="w-4 h-4"></i>
+          <span id="modeText" class="hidden sm:inline">Modo Famílias</span>
+        </button>
+
+        <!-- Botão Partilhar com Encarregados de Educação -->
+        <button id="openShareModalBtn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold text-sm shadow-md shadow-orange-200 transition transform active:scale-95">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+          <span class="hidden xs:inline">Partilhar com os Pais</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 flex flex-col gap-6">
+
+    <!-- Painel de Edição / Gestão de Páginas (Ocultável no Modo Famílias) -->
+    <section id="creatorPanel" class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm transition-all duration-300">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+              <span class="text-amber-500">🎨</span> Gestor de Páginas
+            </h2>
+            <!-- Renomear Jornal Atual -->
+            <button id="renameJournalBtn" class="text-xs text-slate-500 hover:text-slate-800 underline decoration-slate-300 font-medium flex items-center gap-1">
+              <i data-lucide="pencil-line" class="w-3.5 h-3.5"></i>
+              Renomear Jornal
+            </button>
+            <button id="deleteJournalBtn" class="text-xs text-rose-500 hover:text-rose-700 underline decoration-rose-300 font-medium flex items-center gap-1 ml-2">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              Eliminar este Jornal
+            </button>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-500">Carregue imagens (JPG, PNG) ou o PDF completo do jornal feito na sala.</p>
+        </div>
+
+        <!-- Ações de Carregamento -->
+        <div class="flex items-center flex-wrap gap-2">
+          <label class="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 font-semibold text-sm transition">
+            <i data-lucide="image-plus" class="w-4 h-4 text-amber-600"></i>
+            <span>Anexar Imagens</span>
+            <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp" multiple class="hidden">
+          </label>
+
+          <label class="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200 font-semibold text-sm transition">
+            <i data-lucide="file-up" class="w-4 h-4 text-rose-600"></i>
+            <span>Carregar PDF</span>
+            <input type="file" id="pdfInput" accept="application/pdf" class="hidden">
+          </label>
+
+          <button id="resetDemoBtn" class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition" title="Repor páginas da edição exemplo">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Exemplo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Miniaturas Reordenáveis -->
+      <div class="mt-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Ordem das Páginas (<span id="pageCountBadge">0</span> no total)
+          </span>
+          <span class="text-xs text-slate-400">Dica: Use as setas para mover ou o botão 📝 para descrever/adicionar leitura da página</span>
+        </div>
+
+        <div id="pagesThumbContainer" class="flex items-center gap-3 overflow-x-auto py-2 px-1 no-scrollbar min-h-[110px]">
+          <!-- As miniaturas serão injetadas via JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Área de Leitura / Flipbook -->
+    <section class="flex-1 flex flex-col items-center justify-center relative min-h-[500px] w-full">
+      
+      <!-- Barra de Ferramentas do Ebook (Topo) -->
+      <div class="w-full max-w-4xl flex items-center justify-between px-3 py-2 mb-2 bg-white/70 backdrop-blur rounded-2xl border border-slate-200/60 shadow-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="journalTitleText" class="text-xs sm:text-sm font-bold text-slate-700 truncate max-w-[160px] sm:max-w-xs">
+            O Nosso Jornal
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Botão de Acessibilidade: Leitura em Voz Alta do Jornal Todo -->
+          <button id="speakPageBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95" title="Ouvir a leitura de todo o jornal em voz alta">
+            <i data-lucide="speech" id="speakIcon" class="w-4 h-4"></i>
+            <span id="speakBtnText">Ouvir Jornal</span>
+          </button>
+
+          <!-- Indicador da Página Atual -->
+          <div class="px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs sm:text-sm font-bold text-amber-900" id="pageNumberDisplay">
+            Pág. 1 de 6
+          </div>
+
+          <!-- Ecrã Inteiro -->
+          <button id="fullscreenBtn" title="Ecrã Inteiro" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition">
+            <i data-lucide="maximize" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contentor Central do Livro -->
+      <div id="bookWrapper" class="w-full max-w-4xl flex items-center justify-center p-2 sm:p-4 select-none">
+        <div id="flipbookContainer" class="relative">
+          <!-- O StPageFlip será montado dinamicamente aqui -->
+        </div>
+      </div>
+
+      <!-- Barra de Controlos de Navegação Inferior -->
+      <div class="w-full max-w-md flex items-center justify-center gap-4 mt-3">
+        <button id="prevPageBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-sm shadow-sm transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-left" class="w-5 h-5 text-amber-600"></i>
+          <span>Anterior</span>
+        </button>
+
+        <span class="text-xs text-slate-400 font-medium hidden sm:inline">Toque ou arraste os cantos para folhear</span>
+
+        <button id="nextPageBtn" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-sm shadow-sm transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+          <span>Seguinte</span>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-amber-600"></i>
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal de Partilha com os Encarregados de Educação -->
+  <div id="shareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 fade-enter relative">
+      
+      <!-- Cabeçalho Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-800">Partilhar com as Famílias</h3>
+            <p class="text-xs text-slate-500">Pronto a enviar por WhatsApp ou imprimir para o placard</p>
+          </div>
+        </div>
+        <button id="closeShareModalBtn" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo do Modal -->
+      <div class="mt-5 space-y-4">
+
+        <!-- Zona QR Code -->
+        <div class="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <div id="qrcodeWrapper" class="bg-white p-3 rounded-2xl shadow-sm border border-amber-200 flex-shrink-0">
+            <!-- QR code gerado pelo qrcode.js -->
+            <div id="qrcode"></div>
+          </div>
+          <div class="space-y-1">
+            <h4 class="text-sm font-bold text-amber-900">Código QR para as Famílias (Placard)</h4>
+            <p class="text-xs text-slate-600">Abre o jornal diretamente no modo de leitura protegido (sem botões nem opções de edição).</p>
+            <button id="downloadQrBtn" class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-200/70 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              Descarregar Imagem QR
+            </button>
+          </div>
+        </div>
+
+        <!-- Link Exclusivo para os Pais (Apenas Leitura) -->
+        <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-600"></i>
+              Link para os Pais (Apenas Leitura / Sem Edição):
+            </label>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">Recomendado</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="parentsShareUrlInput" type="text" readonly class="flex-1 bg-white border border-emerald-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono">
+            <button id="copyParentsLinkBtn" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span id="copyParentsBtnText">Copiar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Link para as Educadoras (Com Edição e Gestão) -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+          <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+            <i data-lucide="pencil" class="w-3.5 h-3.5 text-slate-500"></i>
+            Link para as Educadoras (Permite Editar e Carregar PDFs):
+          </label>
+          <div class="flex items-center gap-2">
+            <input id="shareUrlInput" type="text" readonly class="flex-1 bg-white border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono">
+            <button id="copyLinkBtn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span id="copyBtnText">Copiar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mensagem de WhatsApp / Email Pronta -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Mensagem rápida para WhatsApp ou E-mail:</label>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-700 relative font-mono text-[11px] leading-relaxed" id="whatsappMessagePreview">
+            Queridas famílias! 🌸 Já está pronta a nova edição do nosso jornal: "O Nosso Jornal"! Podem folhear as páginas com o toque aqui: [LINK]
+          </div>
+          <div class="mt-2 flex gap-2">
+            <button id="sendWhatsAppBtn" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+              Abrir WhatsApp
+            </button>
+            <button id="copyMsgBtn" class="py-2 px-3 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="clipboard-copy" class="w-3.5 h-3.5"></i>
+              Copiar Mensagem
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Notificação Flutuante Toast -->
+  <div id="toastMessage" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 pointer-events-none">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastText">Ação concluída com sucesso!</span>
+  </div>
+
+  <!-- Modal de Edição de Texto / Audiodescrição da Página -->
+  <div id="editPageModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 fade-enter relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="volume-2" class="w-4 h-4 text-amber-500"></i>
+          Texto de Leitura / Acessibilidade
+        </h3>
+        <button id="closeEditPageModalBtn" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="mt-4 space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Título da Página:</label>
+          <input type="text" id="editPageTitleInput" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400 font-semibold">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Texto a ser Lido em Voz Alta para as Crianças e Famílias:</label>
+          <textarea id="editPageTextInput" rows="4" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed" placeholder="Descreva ou escreva o texto desta página para ser narrado automaticamente ao tocar no botão Ouvir..."></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="cancelEditPageBtn" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+          <button id="saveEditPageBtn" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-200">Guardar Texto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Sintetizador de Som de Folhear Papel com Web Audio API */
+    let audioCtx = null;
+    let isSoundEnabled = true;
+
+    function playPageFlipSound() {
+      if (!isSoundEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        // Criar ruído branco filtrado para imitar o atrito suave de papel
+        const bufferSize = audioCtx.sampleRate * 0.18; // 180ms
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+
+        // Filtro passa-faixa para frequência suave típica de papel
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(900, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(350, audioCtx.currentTime + 0.16);
+        filter.Q.value = 1.2;
+
+        // Envelope de volume (fade in rápido e fade out suave)
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.03);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.17);
+
+        noise.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        noise.start();
+        noise.stop(audioCtx.currentTime + 0.18);
+      } catch (err) {
+        console.warn("Áudio não suportado ou bloqueado pelo navegador", err);
+      }
+    }
+
+    // Edição de Demonstração Pré-definida (Páginas Ilustradas em SVG)
+    function createDemoSvgPage(title, subtitle, contentText, accentColor, iconSvg, pageNum) {
+      const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" width="100%" height="100%">
+        <rect width="500" height="700" fill="#FFFDF9"/>
+        <rect x="20" y="20" width="460" height="660" rx="16" fill="none" stroke="${accentColor}" stroke-width="3" stroke-dasharray="8 6"/>
+        
+        <!-- Cabeçalho da Página -->
+        <rect x="35" y="35" width="430" height="70" rx="12" fill="${accentColor}" opacity="0.15"/>
+        <text x="50" y="70" font-family="sans-serif" font-size="20" font-weight="bold" fill="#1e293b">${title}</text>
+        <text x="50" y="92" font-family="sans-serif" font-size="13" fill="#64748b">${subtitle}</text>
+
+        <!-- Ilustração Central / Ícone -->
+        <g transform="translate(200, 160) scale(1.6)">
+          ${iconSvg}
+        </g>
+
+        <!-- Caixa de Texto / Atividade -->
+        <rect x="45" y="320" width="410" height="290" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+        <foreignObject x="65" y="340" width="370" height="250">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:sans-serif; color:#334155; font-size:15px; line-height:1.6;">
+            ${contentText}
+          </div>
+        </foreignObject>
+
+        <!-- Rodapé -->
+        <text x="250" y="650" font-family="sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Jardim de Infância • Página ${pageNum}</text>
+      </svg>
+      `;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+
+    const demoPages = [
+      {
+        id: 'p1',
+        title: 'Capa do Jornal',
+        narration: 'Bem-vindos ao nosso jornalzinho digital do Jardim de Infância Alexandre Rodrigues Ferreira! Esta edição reúne os projetos, desenhos e descobertas fantásticas das nossas crianças. Vamos folhear e descobrir tudo o que fizemos!',
+        src: createDemoSvgPage(
+          '🌻 O Nosso Jornal!',
+          'Edição Especial do JI ARF',
+          `<b>Queridas Famílias!</b><br><br>
+           Bem-vindas à nossa primeira edição digital! Este jornal reúne os projetos, desenhos e descobertas fantásticas que as nossas crianças fizeram durante este mês.<br><br>
+           ✨ Toque na folha ou deslize o dedo para descobrir tudo o que fizemos!`,
+          '#F59E0B',
+          `<circle cx="32" cy="32" r="28" fill="#FDE68A"/><path d="M32 10 v44 M10 32 h44 M16 16 l32 32 M16 48 l32 -32" stroke="#D97706" stroke-width="4" stroke-linecap="round"/>`,
+          1
+        )
+      },
+      {
+        id: 'p2',
+        title: 'A Pequena Horta dos Afetos',
+        narration: 'A Horta da Nossa Sala. Projeto de Ciências e Cuidado com a Natureza. As nossas crianças semearam alfaces, cenouras e morangueiros nos canteiros do pátio! Aprendemos que todas as plantas precisam de água, terra e muito sol, e já nasceram os primeiros rebentinhos verdes!',
+        src: createDemoSvgPage(
+          '🌱 A Horta da Nossa Sala',
+          'Projeto de Ciências e Cuidado com a Natureza',
+          `As nossas crianças semearam alfaces, cenouras e morangueiros nos canteiros do pátio!<br><br>
+           <b>O que aprendemos:</b><br>
+           • Todas as plantas precisam de água, terra e muito sol.<br>
+           • Temos de regar com cuidado todos os dias.<br>
+           • Já nasceram os primeiros rebentinhos verdes!`,
+          '#10B981',
+          `<circle cx="32" cy="32" r="28" fill="#A7F3D0"/><path d="M32 46 V24 M32 24 C26 14 16 20 22 28 C26 34 32 36 32 36 M32 28 C38 20 48 24 44 32 C40 38 32 40 32 40" stroke="#047857" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+          2
+        )
+      },
+      {
+        id: 'p3',
+        title: 'Pintura com Elementos Naturais',
+        narration: 'Pequenos Grandes Artistas. Expressão Plástica e Cores da Terra. Fizemos tintas ecológicas usando pétalas de flores caídas, terra húmida e folhas secas! Cada criança criou uma textura única numa tela coletiva que em breve estará exposta no corredor de entrada. Venham espreitar!',
+        src: createDemoSvgPage(
+          '🎨 Pequenos Grandes Artistas',
+          'Expressão Plástica & Cores da Terra',
+          `Fizemos tintas ecológicas usando pétalas de flores caídas, terra húmida e folhas secas!<br><br>
+           Cada criança criou uma textura única numa tela coletiva que em breve estará exposta no corredor de entrada. Venham espreitar!`,
+          '#EC4899',
+          `<circle cx="32" cy="32" r="28" fill="#FBCFE8"/><path d="M20 42 C16 38 18 28 26 24 C34 20 44 26 44 34 C44 42 36 46 30 46 C24 46 22 44 20 42 Z" stroke="#BE185D" stroke-width="3" fill="none"/>`,
+          3
+        )
+      },
+      {
+        id: 'p4',
+        title: 'Culinária: Bolachinhas de Aveia',
+        narration: 'Mãos na Massa: Pequenos Pasteleiros. Atividade de Medição e Autonomia. Com a ajuda do Educador, medimos a farinha, a aveia e o mel. Amassámos tudo e demos formato às nossas próprias bolachas. O cheirinho espalhou-se por todo o jardim de infância e o lanche foi delicioso!',
+        src: createDemoSvgPage(
+          '🍪 Mãos na Massa: Pequenos Pasteleiros',
+          'Atividade de Medição e Autonomia',
+          `Com a ajuda do Educador, medimos a farinha, a aveia e o mel. Amassámos tudo e demos formato às nossas próprias bolachas.<br><br>
+           O cheirinho espalhou-se por todo o jardim de infância e o lanche foi delicioso!`,
+          '#8B5CF6',
+          `<circle cx="32" cy="32" r="28" fill="#DDD6FE"/><circle cx="32" cy="32" r="16" fill="#C4B5FD"/><circle cx="28" cy="28" r="2" fill="#5B21B6"/><circle cx="36" cy="32" r="2" fill="#5B21B6"/><circle cx="30" cy="38" r="2" fill="#5B21B6"/>`,
+          4
+        )
+      },
+      {
+        id: 'p5',
+        title: 'Cantinho da Poesia e Rimas',
+        narration: 'Palavras que Rimam e Brincam. Desenvolvimento da Linguagem e Imaginação. Inventámos uma rima para a nossa mascote, o Caracol Saltitão: Caracol, caracolinho, sai da casca de mansinho! Vem connosco passear, e à roda no jardim dançar!',
+        src: createDemoSvgPage(
+          '📖 Palavras que Rimam e Brincam',
+          'Desenvolvimento da Linguagem e Imaginação',
+          `Inventámos uma rima para a nossa mascote, o Caracol Saltitão:<br><br>
+           <i>"Caracol, caracolinho,<br>
+           Sai da casca de mansinho!<br>
+           Vem connosco passear,<br>
+           E à roda no jardim dançar!"</i>`,
+          '#3B82F6',
+          `<circle cx="32" cy="32" r="28" fill="#BFDBFE"/><path d="M22 24 h20 M22 32 h16 M22 40 h12" stroke="#1D4ED8" stroke-width="3" stroke-linecap="round"/>`,
+          5
+        )
+      },
+      {
+        id: 'p6',
+        title: 'Mensagem Final às Famílias',
+        narration: 'Obrigado por caminharem connosco. A equipa pedagógica agradece a todos os pais e familiares pela vossa dedicação diária e envolvimento nas nossas atividades. Lembrem-se: brincar é a forma mais elevada de pesquisa da infância. Até à próxima edição!',
+        src: createDemoSvgPage(
+          '❤️ Obrigado por Caminharem Connosco',
+          'A Equipa Pedagógica',
+          `Agradecemos a todos os pais e familiares pela vossa dedicação diária e envolvimento nas nossas atividades.<br><br>
+           Lembrem-se: <b>"Brincar é a forma mais elevada de pesquisa da infância."</b><br><br>
+           Até à próxima edição!`,
+          '#14B8A6',
+          `<circle cx="32" cy="32" r="28" fill="#99F6E4"/><path d="M32 44 S18 34 18 24 A8 8 0 0 1 32 18 A8 8 0 0 1 46 24 C46 34 32 44 32 44 Z" fill="#0D9488"/>`,
+          6
+        )
+      }
+    ];
+
+    /* Estado da Aplicação Multi-Jornal e Acessibilidade */
+    let allJournals = [];
+    let currentJournalId = 'jornal_default';
+    let currentPages = [...demoPages];
+    let pageFlipInstance = null;
+    let isReaderMode = false;
+    let qrCodeInstance = null;
+    let isSpeaking = false;
+    let isAutoReading = false;
+    let currentReadingPageIndex = 0;
+    let editingPageIndex = -1;
+    let speechKeepAliveTimer = null;
+    window.__currentUtterance = null;
+
+    /* Base de dados local (IndexedDB) para guardar vários jornais e páginas */
+    const DB_NAME = 'JornalinhoDB';
+    const STORE_NAME = 'jornais';
+
+    function openDB() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) {
+          resolve(null);
+          return;
+        }
+        try {
+          const req = indexedDB.open(DB_NAME, 2);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function saveAllJournalsToStorage() {
+      try {
+        const db = await openDB();
+        if (!db) return;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(allJournals, 'multiJournals');
+        tx.objectStore(STORE_NAME).put(currentJournalId, 'activeJournalId');
+      } catch (e) {
+        console.warn('Storage indisponível:', e);
+      }
+    }
+
+    async function loadJournalsFromStorage() {
+      try {
+        const db = await openDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get('multiJournals');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function loadActiveJournalIdFromStorage() {
+      try {
+        const db = await openDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get('activeJournalId');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function getCurrentJournal() {
+      return allJournals.find(j => j.id === currentJournalId) || allJournals[0];
+    }
+
+    function updateJournalSelectorUI() {
+      const selector = document.getElementById('journalSelector');
+      if (!selector) return;
+      selector.innerHTML = '';
+      allJournals.forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = j.id;
+        opt.textContent = j.title;
+        if (j.id === currentJournalId) opt.selected = true;
+        selector.appendChild(opt);
+      });
+
+      const current = getCurrentJournal();
+      if (current) {
+        const journalTitleEl = document.getElementById('journalTitleText');
+        if (journalTitleEl) journalTitleEl.textContent = current.title;
+      }
+    }
+
+    function switchJournal(id) {
+      currentJournalId = id;
+      const current = getCurrentJournal();
+      if (current) {
+        currentPages = current.pages;
+        saveAllJournalsToStorage();
+        updateJournalSelectorUI();
+        renderThumbnails();
+        initPageFlip();
+        setupQrCode();
+        stopSpeech();
+        showToast(`Aberto: ${current.title}`);
+      }
+    }
+
+    async function loadPagesFromStorage() {
+      try {
+        const db = await openDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get('savedPages');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function initPageFlip() {
+      const container = document.getElementById('flipbookContainer');
+      container.innerHTML = ''; // Limpar anterior
+
+      // Criar elemento de livro
+      const bookEl = document.createElement('div');
+      bookEl.className = 'flip-book';
+      bookEl.id = 'pageFlipBook';
+
+      // Gerar páginas HTML: Capa e contracapa isoladas como páginas duras ('hard')
+      currentPages.forEach((page, index) => {
+        const isCover = (index === 0);
+        const isBackCover = (index === currentPages.length - 1);
+        const pageDiv = document.createElement('div');
+        pageDiv.className = `page ${isCover || isBackCover ? 'page-hard' : ''}`;
+        
+        // Define densidade dura na capa para que apareça isolada e fechada
+        if (isCover || isBackCover) {
+          pageDiv.setAttribute('data-density', 'hard');
+        } else {
+          pageDiv.setAttribute('data-density', 'soft');
+        }
+        
+        pageDiv.innerHTML = `
+          <div class="page-content">
+            <img src="${page.src}" alt="${page.title || 'Página do Jornal'}" loading="lazy">
+          </div>
+        `;
+        bookEl.appendChild(pageDiv);
+      });
+
+      container.appendChild(bookEl);
+
+      // Calcular dimensões responsivas
+      const screenWidth = window.innerWidth;
+      const isMobile = screenWidth < 768;
+
+      let pageWidth = 440;
+      let pageHeight = 600;
+
+      if (screenWidth < 500) {
+        pageWidth = Math.min(screenWidth - 40, 360);
+        pageHeight = pageWidth * 1.38;
+      } else if (screenWidth < 768) {
+        pageWidth = 380;
+        pageHeight = 520;
+      }
+
+      // Destruir instância anterior se existir
+      if (pageFlipInstance) {
+        try {
+          pageFlipInstance.destroy();
+        } catch (e) {
+          console.log(e);
+        }
+      }
+
+      // Inicializar biblioteca StPageFlip com showCover para mostrar apenas a capa de início
+      pageFlipInstance = new St.PageFlip(bookEl, {
+        width: pageWidth,
+        height: pageHeight,
+        size: 'fixed',
+        minWidth: 280,
+        maxWidth: 550,
+        minHeight: 380,
+        maxHeight: 750,
+        maxShadowOpacity: 0.4,
+        showCover: true, // A capa inicial aparece isolada
+        mobileScrollSupport: false,
+        usePortrait: isMobile,
+        startPage: 0,
+        drawShadow: true,
+        flippingTime: 600,
+        useMouseEvents: true
+      });
+
+      pageFlipInstance.loadFromHTML(document.querySelectorAll('.page'));
+
+      // Eventos do Flipbook
+      pageFlipInstance.on('flip', (e) => {
+        updatePageIndicator(e.data);
+        playPageFlipSound();
+        adjustBookPosition(e.data);
+      });
+
+      pageFlipInstance.on('changeState', (e) => {
+        // Atualizar estado de botões
+        updateNavButtons();
+      });
+
+      updatePageIndicator(0);
+      updateNavButtons();
+      adjustBookPosition(0);
+    }
+
+    /* Centralização dinâmica da capa fechada isolada e do fólio duplo aberto */
+    function adjustBookPosition(pageIndex) {
+      const bookContainer = document.getElementById('flipbookContainer');
+      if (!bookContainer || !pageFlipInstance) return;
+
+      const isMobile = window.innerWidth < 768;
+      // Em dispositivos móveis / modo retrato a página já se apresenta isolada e centrada
+      if (isMobile) {
+        bookContainer.style.transform = 'translateX(0)';
+        return;
+      }
+
+      const total = currentPages.length;
+      const screenWidth = window.innerWidth;
+      let pageWidth = 440;
+      if (screenWidth < 500) {
+        pageWidth = Math.min(screenWidth - 40, 360);
+      } else if (screenWidth < 768) {
+        pageWidth = 380;
+      }
+      const shiftOffset = pageWidth / 2;
+
+      // Quando fechado na Capa (Página 0): centra a folha isolada no meio do ecrã
+      if (pageIndex === 0) {
+        bookContainer.style.transform = `translateX(-${shiftOffset}px)`;
+      } else if (pageIndex >= total - 1) {
+        // Quando fechado na Contracapa (última página isolada)
+        bookContainer.style.transform = `translateX(${shiftOffset}px)`;
+      } else {
+        // Em fólio duplo aberto: o livro abre simetricamente a meio
+        bookContainer.style.transform = 'translateX(0)';
+      }
+      bookContainer.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+    }
+
+    /* Atualizar indicador de páginas */
+    function updatePageIndicator(pageIndex) {
+      const total = currentPages.length;
+      const displayEl = document.getElementById('pageNumberDisplay');
+      
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        displayEl.textContent = `Pág. ${pageIndex + 1} de ${total}`;
+      } else {
+        if (pageIndex === 0) {
+          displayEl.textContent = `Capa (1 de ${total})`;
+        } else if (pageIndex >= total - 1) {
+          displayEl.textContent = `Contracapa (${total} de ${total})`;
+        } else {
+          displayEl.textContent = `Pág. ${pageIndex + 1}-${Math.min(pageIndex + 2, total)} de ${total}`;
+        }
+      }
+      updateNavButtons();
+    }
+
+    /* Atualizar botões de navegação */
+    function updateNavButtons() {
+      if (!pageFlipInstance) return;
+      const cur = pageFlipInstance.getCurrentPageIndex();
+      const total = currentPages.length;
+      document.getElementById('prevPageBtn').disabled = (cur <= 0);
+      document.getElementById('nextPageBtn').disabled = (cur >= total - 1);
+    }
+
+    function renderThumbnails() {
+      const container = document.getElementById('pagesThumbContainer');
+      const badge = document.getElementById('pageCountBadge');
+      container.innerHTML = '';
+      badge.textContent = currentPages.length;
+
+      currentPages.forEach((page, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex-shrink-0 bg-slate-50 border border-slate-200 rounded-xl p-2 w-24 flex flex-col items-center gap-1.5 shadow-2xs group relative hover:border-amber-400 transition';
+
+        item.innerHTML = `
+          <div class="w-full h-24 bg-white rounded-lg overflow-hidden border border-slate-100 flex items-center justify-center">
+            <img src="${page.src}" class="w-full h-full object-cover" alt="Miniatura ${idx + 1}">
+          </div>
+          <span class="text-[11px] font-bold text-slate-600 truncate max-w-[80px]" title="${page.title || 'Página'}">Pág. ${idx + 1}</span>
+
+          <!-- Ações rápidas de mover, descrever e eliminar -->
+          <div class="flex items-center gap-1 w-full justify-between pt-1 border-t border-slate-100">
+            <button onclick="movePage(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 text-[10px]" title="Mover para a esquerda">
+              ◀
+            </button>
+            <button onclick="openEditPageModal(${idx})" class="p-1 rounded hover:bg-amber-100 text-amber-600 text-[10px]" title="Adicionar texto / audiodescrição para leitura">
+              📝
+            </button>
+            <button onclick="removePage(${idx})" class="p-1 rounded hover:bg-rose-100 text-rose-500 text-[10px]" title="Eliminar página">
+              ✕
+            </button>
+            <button onclick="movePage(${idx}, 1)" ${idx === currentPages.length - 1 ? 'disabled' : ''} class="p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-20 text-[10px]" title="Mover para a direita">
+              ▶
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    window.openEditPageModal = function(index) {
+      editingPageIndex = index;
+      const page = currentPages[index];
+      if (!page) return;
+      document.getElementById('editPageTitleInput').value = page.title || `Página ${index + 1}`;
+      document.getElementById('editPageTextInput').value = page.narration || getPageFullText(page, index) || '';
+      document.getElementById('editPageModal').classList.remove('hidden');
+    };
+
+    document.getElementById('closeEditPageModalBtn').addEventListener('click', () => {
+      document.getElementById('editPageModal').classList.add('hidden');
+    });
+    document.getElementById('cancelEditPageBtn').addEventListener('click', () => {
+      document.getElementById('editPageModal').classList.add('hidden');
+    });
+    document.getElementById('saveEditPageBtn').addEventListener('click', () => {
+      if (editingPageIndex >= 0 && editingPageIndex < currentPages.length) {
+        currentPages[editingPageIndex].title = document.getElementById('editPageTitleInput').value.trim() || `Página ${editingPageIndex + 1}`;
+        currentPages[editingPageIndex].narration = document.getElementById('editPageTextInput').value.trim();
+        const cur = getCurrentJournal();
+        if (cur) cur.pages = currentPages;
+        saveAllJournalsToStorage();
+        renderThumbnails();
+        showToast('Texto de acessibilidade guardado!');
+      }
+      document.getElementById('editPageModal').classList.add('hidden');
+    });
+
+    window.movePage = function(index, delta) {
+      const target = index + delta;
+      if (target < 0 || target >= currentPages.length) return;
+      const temp = currentPages[index];
+      currentPages[index] = currentPages[target];
+      currentPages[target] = temp;
+      const cur = getCurrentJournal();
+      if (cur) cur.pages = currentPages;
+      saveAllJournalsToStorage();
+      renderThumbnails();
+      initPageFlip();
+      showToast('Ordem das páginas atualizada!');
+    };
+
+    window.removePage = function(index) {
+      if (currentPages.length <= 2) {
+        showToast('O jornal precisa de pelo menos 2 páginas para folhear.');
+        return;
+      }
+      currentPages.splice(index, 1);
+      const cur = getCurrentJournal();
+      if (cur) cur.pages = currentPages;
+      saveAllJournalsToStorage();
+      renderThumbnails();
+      initPageFlip();
+      showToast('Página removida.');
+    };
+
+    /* Leitura em Voz Alta (Acessibilidade) com Web Speech API - Todo o Jornal Sequencial */
+    function getBestVoice() {
+      if (!('speechSynthesis' in window)) return null;
+      const voices = window.speechSynthesis.getVoices();
+      return voices.find(v => v.lang === 'pt-PT') ||
+             voices.find(v => v.lang.startsWith('pt')) ||
+             voices[0] || null;
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        getBestVoice();
+      };
+    }
+
+    function startReadingFullJournal() {
+      if (!('speechSynthesis' in window)) {
+        showToast('A leitura por voz não é suportada neste navegador.');
+        return;
+      }
+      if (!currentPages || currentPages.length === 0) {
+        showToast('Não há páginas para ler.');
+        return;
+      }
+
+      isAutoReading = true;
+      isSpeaking = true;
+      updateSpeechUI();
+
+      // Garantir que a leitura começa sempre na capa (página 0)
+      currentReadingPageIndex = 0;
+      if (pageFlipInstance && pageFlipInstance.getCurrentPageIndex() !== 0) {
+        try {
+          pageFlipInstance.flip(0);
+        } catch (e) {
+          try { pageFlipInstance.turnToPage(0); } catch (_) {}
+        }
+      }
+
+      showToast('A iniciar a leitura completa do jornal...');
+      setTimeout(() => {
+        if (isAutoReading) {
+          readPageAtIndex(0);
+        }
+      }, 500);
+    }
+
+    /* Extrai o texto completo e rico da página para leitura sem se limitar ao número */
+    function getPageFullText(page, pageIndex) {
+      if (!page) return `Página ${pageIndex + 1}`;
+
+      // 1. Se tem narração rica personalizada
+      if (page.narration && page.narration.trim()) {
+        const cleanNarr = page.narration.trim();
+        const isJustPageNum = /^p[áa]gina(\s*\d+|\s*:\s*.*)?$/i.test(cleanNarr);
+        if (!isJustPageNum) {
+          return cleanNarr;
+        }
+      }
+
+      // 2. Se corresponde a uma página do modelo de demonstração (recupera o texto da história/projeto)
+      const demoMatch = demoPages.find(d => d.id === page.id) || demoPages[pageIndex];
+      if (demoMatch && demoMatch.narration) {
+        if (!page.src || page.src.startsWith('data:image/svg+xml') || (page.title && page.title === demoMatch.title)) {
+          return demoMatch.narration;
+        }
+      }
+
+      // 3. Se a página é gerada em SVG, extrai todos os blocos de texto e parágrafos contidos no desenho
+      if (page.src && typeof page.src === 'string' && page.src.includes('svg')) {
+        try {
+          let svgStr = '';
+          if (page.src.startsWith('data:image/svg+xml;utf8,')) {
+            svgStr = decodeURIComponent(page.src.replace('data:image/svg+xml;utf8,', ''));
+          } else if (page.src.startsWith('data:image/svg+xml,')) {
+            svgStr = decodeURIComponent(page.src.replace('data:image/svg+xml,', ''));
+          }
+          if (svgStr) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+            const elements = doc.querySelectorAll('text, div, p, span, h1, h2, h3, b, i');
+            const texts = [];
+            elements.forEach(el => {
+              const str = el.textContent.replace(/\s+/g, ' ').trim();
+              if (str && !texts.includes(str) && !str.includes('Jardim de Infância • Página')) {
+                texts.push(str);
+              }
+            });
+            if (texts.length > 0) {
+              return texts.join('. ');
+            }
+          }
+        } catch (e) {
+          console.warn('Erro ao processar texto do SVG:', e);
+        }
+      }
+
+      // 4. Se tiver texto de conteúdo guardado
+      if (page.contentText && page.contentText.trim()) {
+        return (page.title ? page.title + '. ' : '') + page.contentText.trim();
+      }
+
+      // 5. Se o título for informativo e não apenas o número da página
+      if (page.title && page.title.trim() && !/^p[áa]gina\s*\d+$/i.test(page.title.trim())) {
+        return page.title.trim();
+      }
+
+      return `Página ${pageIndex + 1}`;
+    }
+
+    /* Divide textos longos em frases fluidas para evitar interrupções no navegador */
+    function splitTextIntoSpeechChunks(text) {
+      if (!text) return [];
+      const rawSentences = text.match(/[^.!?\n]+[.!?\n]+|[^.!?\n]+$/g) || [text];
+      const chunks = [];
+      rawSentences.forEach(sentence => {
+        const s = sentence.trim();
+        if (!s) return;
+        if (s.length > 180) {
+          const words = s.split(' ');
+          let currentChunk = '';
+          words.forEach(word => {
+            if ((currentChunk + ' ' + word).trim().length <= 180) {
+              currentChunk = (currentChunk + ' ' + word).trim();
+            } else {
+              if (currentChunk) chunks.push(currentChunk);
+              currentChunk = word;
+            }
+          });
+          if (currentChunk) chunks.push(currentChunk);
+        } else {
+          chunks.push(s);
+        }
+      });
+      return chunks.length > 0 ? chunks : [text];
+    }
+
+    function readPageAtIndex(pageIndex) {
+      if (!isAutoReading) return;
+
+      if (pageIndex >= currentPages.length) {
+        stopSpeech();
+        showToast('Fim da leitura do jornal. Obrigado por ouvir!');
+        return;
+      }
+
+      currentReadingPageIndex = pageIndex;
+
+      // Virar a página visualmente de forma suave para acompanhar a leitura
+      if (pageFlipInstance) {
+        try {
+          const currentPageIndex = pageFlipInstance.getCurrentPageIndex();
+          if (currentPageIndex !== pageIndex) {
+            pageFlipInstance.flip(pageIndex);
+          }
+        } catch (e) {
+          try { pageFlipInstance.turnToPage(pageIndex); } catch (_) {}
+        }
+      }
+
+      const page = currentPages[pageIndex];
+      const textToRead = getPageFullText(page, pageIndex);
+
+      const cleanText = textToRead.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+      const chunks = splitTextIntoSpeechChunks(cleanText);
+
+      window.speechSynthesis.cancel();
+      playPageChunks(chunks, 0, pageIndex);
+    }
+
+    function playPageChunks(chunks, chunkIndex, pageIndex) {
+      if (!isAutoReading || currentReadingPageIndex !== pageIndex) return;
+
+      if (chunkIndex >= chunks.length) {
+        // Toda a página foi lida por completo. Aguarda 1 segundo e folheia para a seguinte
+        setTimeout(() => {
+          if (isAutoReading && currentReadingPageIndex === pageIndex) {
+            readPageAtIndex(pageIndex + 1);
+          }
+        }, 1000);
+        return;
+      }
+
+      const textChunk = chunks[chunkIndex];
+      const utterance = new SpeechSynthesisUtterance(textChunk);
+      window.__currentUtterance = utterance;
+      utterance.lang = 'pt-PT';
+      utterance.rate = 0.95;
+
+      const voice = getBestVoice();
+      if (voice) utterance.voice = voice;
+
+      utterance.onstart = () => {
+        isSpeaking = true;
+        updateSpeechUI();
+      };
+
+      utterance.onend = () => {
+        if (!isAutoReading || currentReadingPageIndex !== pageIndex) return;
+        // Continua a leitura de todas as frases seguintes da mesma página
+        playPageChunks(chunks, chunkIndex + 1, pageIndex);
+      };
+
+      utterance.onerror = (err) => {
+        console.warn('Avançando trecho após erro de síntese:', err);
+        if (!isAutoReading || currentReadingPageIndex !== pageIndex) return;
+        playPageChunks(chunks, chunkIndex + 1, pageIndex);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeech() {
+      isAutoReading = false;
+      isSpeaking = false;
+      clearInterval(speechKeepAliveTimer);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      window.__currentUtterance = null;
+      updateSpeechUI();
+    }
+
+    function updateSpeechUI() {
+      const speakBtnText = document.getElementById('speakBtnText');
+      const speakIcon = document.getElementById('speakIcon');
+      const speakBtn = document.getElementById('speakPageBtn');
+      if (!speakBtnText || !speakIcon || !speakBtn) return;
+
+      if (isSpeaking) {
+        speakBtnText.textContent = 'Parar';
+        speakIcon.setAttribute('data-lucide', 'square');
+        speakBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+        speakBtn.classList.add('bg-rose-500', 'hover:bg-rose-600');
+      } else {
+        speakBtnText.textContent = 'Ouvir Jornal';
+        speakIcon.setAttribute('data-lucide', 'speech');
+        speakBtn.classList.remove('bg-rose-500', 'hover:bg-rose-600');
+        speakBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+      }
+      lucide.createIcons();
+    }
+
+    document.getElementById('speakPageBtn').addEventListener('click', () => {
+      if (isSpeaking) {
+        stopSpeech();
+      } else {
+        startReadingFullJournal();
+      }
+    });
+
+    // Carregar Imagens Soltas
+    document.getElementById('imageInput').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      showToast(`A carregar ${files.length} página(s)...`);
+
+      for (const file of files) {
+        const dataUrl = await readFileAsDataURL(file);
+        const pageTitle = file.name.replace(/\.[^/.]+$/, "");
+        currentPages.push({
+          id: 'img_' + Math.random().toString(36).substr(2, 9),
+          title: pageTitle,
+          narration: `Página: ${pageTitle}`,
+          src: dataUrl
+        });
+      }
+
+      e.target.value = ''; // Limpar input
+      const cur = getCurrentJournal();
+      if (cur) cur.pages = currentPages;
+      saveAllJournalsToStorage();
+      renderThumbnails();
+      initPageFlip();
+      setupQrCode();
+      showToast('Páginas adicionadas com sucesso!');
+    });
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Carregar e Converter Ficheiro PDF com PDF.js
+    document.getElementById('pdfInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      showToast('A processar o documento PDF...');
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const numPages = pdf.numPages;
+
+        showToast(`A converter ${numPages} páginas do PDF...`);
+
+        const newPages = [];
+
+        for (let i = 1; i <= numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 }); // Resolução nítida
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          const imgUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+          // Extrai o texto integral de cada página do PDF para o narrador ler
+          let extractedText = '';
+          try {
+            const textContent = await page.getTextContent();
+            if (textContent && textContent.items) {
+              extractedText = textContent.items
+                .map(item => item.str)
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            }
+          } catch (textErr) {
+            console.warn('Erro ao extrair texto do PDF:', textErr);
+          }
+
+          newPages.push({
+            id: 'pdf_page_' + i + '_' + Date.now(),
+            title: `Página ${i}`,
+            narration: extractedText || '',
+            src: imgUrl
+          });
+        }
+
+        // Substituir ou anexar
+        currentPages = newPages;
+        const cur = getCurrentJournal();
+        if (cur) cur.pages = currentPages;
+        saveAllJournalsToStorage();
+        renderThumbnails();
+        initPageFlip();
+        setupQrCode();
+        showToast('PDF convertido em livro digital!');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao ler PDF. Verifique se o ficheiro é válido.');
+      }
+
+      e.target.value = '';
+    });
+
+    // Gestão de Vários Jornais
+    document.getElementById('newJournalBtn').addEventListener('click', () => {
+      const newTitle = prompt('Nome ou título do novo jornal (ex: Edição do Outono):');
+      if (!newTitle || !newTitle.trim()) return;
+
+      const newId = 'jornal_' + Date.now();
+      const newJournal = {
+        id: newId,
+        title: newTitle.trim(),
+        pages: [...demoPages] // Inicia com modelo base configurado
+      };
+
+      allJournals.push(newJournal);
+      currentJournalId = newId;
+      currentPages = newJournal.pages;
+      saveAllJournalsToStorage();
+      updateJournalSelectorUI();
+      renderThumbnails();
+      initPageFlip();
+      setupQrCode();
+      showToast(`Novo jornal criado: ${newTitle}`);
+    });
+
+    document.getElementById('journalSelector').addEventListener('change', (e) => {
+      switchJournal(e.target.value);
+    });
+
+    document.getElementById('renameJournalBtn').addEventListener('click', () => {
+      const cur = getCurrentJournal();
+      if (!cur) return;
+      const updated = prompt('Novo nome para este jornal:', cur.title);
+      if (updated && updated.trim()) {
+        cur.title = updated.trim();
+        saveAllJournalsToStorage();
+        updateJournalSelectorUI();
+        setupQrCode();
+        showToast('Título do jornal atualizado!');
+      }
+    });
+
+    document.getElementById('deleteJournalBtn').addEventListener('click', () => {
+      if (allJournals.length <= 1) {
+        showToast('Tem de manter pelo menos um jornal.');
+        return;
+      }
+      const cur = getCurrentJournal();
+      if (!cur) return;
+      if (confirm(`Tem a certeza que deseja eliminar "${cur.title}"?`)) {
+        allJournals = allJournals.filter(j => j.id !== cur.id);
+        currentJournalId = allJournals[0].id;
+        currentPages = allJournals[0].pages;
+        saveAllJournalsToStorage();
+        updateJournalSelectorUI();
+        renderThumbnails();
+        initPageFlip();
+        setupQrCode();
+        showToast('Jornal eliminado.');
+      }
+    });
+
+    // Repor Exemplo de Demonstração
+    document.getElementById('resetDemoBtn').addEventListener('click', () => {
+      currentPages = [...demoPages];
+      const cur = getCurrentJournal();
+      if (cur) cur.pages = currentPages;
+      saveAllJournalsToStorage();
+      renderThumbnails();
+      initPageFlip();
+      setupQrCode();
+      showToast('Edição de exemplo restaurada!');
+    });
+
+    function generateShareUrl(forParents = false) {
+      let base = window.location.href;
+
+      // Resolução robusta caso esteja a correr em iframe (about:srcdoc ou blob:)
+      if (!base || base === 'about:srcdoc' || base.startsWith('about:') || base.startsWith('blob:')) {
+        try {
+          if (window.top && window.top.location && window.top.location.href && !window.top.location.href.startsWith('about:')) {
+            base = window.top.location.href;
+          }
+        } catch (e) {
+          base = window.location.origin && window.location.origin !== 'null' ? window.location.origin + window.location.pathname : '';
+        }
+      }
+
+      let url;
+      try {
+        url = new URL(base || window.location.href);
+      } catch (err) {
+        url = new URL('https://jornal-digital.escola/');
+      }
+
+      // Adiciona o ID do jornal selecionado ao link
+      url.searchParams.set('jornal', currentJournalId);
+
+      if (forParents) {
+        url.searchParams.set('modo', 'pais');
+        url.hash = 'pais';
+      } else {
+        url.searchParams.delete('modo');
+        if (url.hash === '#pais') {
+          url.hash = '';
+        }
+      }
+      return url.toString();
+    }
+
+    function setupQrCode() {
+      const qrContainer = document.getElementById('qrcode');
+      if (!qrContainer) return;
+      qrContainer.innerHTML = '';
+
+      const educatorUrl = generateShareUrl(false);
+      const parentsUrl = generateShareUrl(true);
+
+      const educatorInput = document.getElementById('shareUrlInput');
+      const parentsInput = document.getElementById('parentsShareUrlInput');
+
+      if (educatorInput) educatorInput.value = educatorUrl;
+      if (parentsInput) parentsInput.value = parentsUrl;
+
+      // Atualizar texto modelo para partilha aos pais (usando o link de leitura exclusivo)
+      const msg = `Queridas famílias! 🌸 Já está pronta a nova edição do nosso jornal da escola! Folheiem as páginas diretamente no telemóvel aqui:\n${parentsUrl}`;
+      const msgPreview = document.getElementById('whatsappMessagePreview');
+      if (msgPreview) msgPreview.textContent = msg;
+
+      // O QR Code gerado direciona sempre para a vista dos pais (apenas leitura)
+      try {
+        qrCodeInstance = new QRCode(qrContainer, {
+          text: parentsUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#1e293b',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.warn('Erro ao desenhar QR code:', e);
+      }
+    }
+
+    // Modal de Partilha
+    const shareModal = document.getElementById('shareModal');
+    document.getElementById('openShareModalBtn').addEventListener('click', () => {
+      setupQrCode();
+      shareModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeShareModalBtn').addEventListener('click', () => {
+      shareModal.classList.add('hidden');
+    });
+
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) {
+        shareModal.classList.add('hidden');
+      }
+    });
+
+    // Copiar Link das Educadoras
+    document.getElementById('copyLinkBtn').addEventListener('click', () => {
+      const input = document.getElementById('shareUrlInput');
+      input.select();
+      input.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        const textSpan = document.getElementById('copyBtnText');
+        textSpan.textContent = 'Copiado!';
+        showToast('Link de educadora copiado!');
+        setTimeout(() => { textSpan.textContent = 'Copiar'; }, 2000);
+      } catch (e) {
+        showToast('Não foi possível copiar automaticamente.');
+      }
+    });
+
+    // Copiar Link Exclusivo dos Pais (Apenas Leitura)
+    document.getElementById('copyParentsLinkBtn').addEventListener('click', () => {
+      const input = document.getElementById('parentsShareUrlInput');
+      input.select();
+      input.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        const textSpan = document.getElementById('copyParentsBtnText');
+        textSpan.textContent = 'Copiado!';
+        showToast('Link protegido para as famílias copiado!');
+        setTimeout(() => { textSpan.textContent = 'Copiar'; }, 2000);
+      } catch (e) {
+        showToast('Não foi possível copiar automaticamente.');
+      }
+    });
+
+    // Copiar Mensagem Pronta
+    document.getElementById('copyMsgBtn').addEventListener('click', () => {
+      const msg = document.getElementById('whatsappMessagePreview').textContent;
+      const tempInput = document.createElement('textarea');
+      tempInput.value = msg;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('Mensagem copiada para enviar aos pais!');
+    });
+
+    // Enviar via WhatsApp Direto
+    document.getElementById('sendWhatsAppBtn').addEventListener('click', () => {
+      const msg = encodeURIComponent(document.getElementById('whatsappMessagePreview').textContent);
+      window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+    });
+
+    // Descarregar QR Code em Imagem PNG
+    document.getElementById('downloadQrBtn').addEventListener('click', () => {
+      const img = document.querySelector('#qrcode img');
+      if (img && img.src) {
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = 'QR_Jornal_Escola.png';
+        a.click();
+        showToast('Imagem do Código QR descarregada!');
+      } else {
+        const canvas = document.querySelector('#qrcode canvas');
+        if (canvas) {
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = 'QR_Jornal_Escola.png';
+          a.click();
+          showToast('Imagem do Código QR descarregada!');
+        }
+      }
+    });
+
+    // Botões de Avançar e Recuar
+    document.getElementById('prevPageBtn').addEventListener('click', () => {
+      stopSpeech();
+      if (pageFlipInstance) pageFlipInstance.flipPrev();
+    });
+
+    document.getElementById('nextPageBtn').addEventListener('click', () => {
+      stopSpeech();
+      if (pageFlipInstance) pageFlipInstance.flipNext();
+    });
+
+    // Atalhos de Teclado (Setas do Teclado)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        stopSpeech();
+        if (pageFlipInstance) pageFlipInstance.flipPrev();
+      } else if (e.key === 'ArrowRight') {
+        stopSpeech();
+        if (pageFlipInstance) pageFlipInstance.flipNext();
+      }
+    });
+
+    // Ativar / Desativar Som de Papel
+    const toggleSoundBtn = document.getElementById('toggleSoundBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    toggleSoundBtn.addEventListener('click', () => {
+      isSoundEnabled = !isSoundEnabled;
+      if (isSoundEnabled) {
+        soundIcon.setAttribute('data-lucide', 'volume-2');
+        showToast('Som de folhear ativado');
+      } else {
+        soundIcon.setAttribute('data-lucide', 'volume-x');
+        showToast('Som silenciado');
+      }
+      lucide.createIcons();
+    });
+
+    // Alternar Modo Famílias (Ocultar Barra de Edição para Leitura Limpa)
+    const toggleModeBtn = document.getElementById('toggleModeBtn');
+    const creatorPanel = document.getElementById('creatorPanel');
+    const modeText = document.getElementById('modeText');
+
+    toggleModeBtn.addEventListener('click', () => {
+      isReaderMode = !isReaderMode;
+      if (isReaderMode) {
+        creatorPanel.classList.add('hidden');
+        modeText.textContent = 'Modo Educador';
+        toggleModeBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+        toggleModeBtn.classList.add('bg-amber-100', 'text-amber-800', 'border-amber-300');
+        showToast('Vista de Leitura ativada (ideal para os pais)');
+      } else {
+        creatorPanel.classList.remove('hidden');
+        modeText.textContent = 'Modo Famílias';
+        toggleModeBtn.classList.remove('bg-amber-100', 'text-amber-800', 'border-amber-300');
+        toggleModeBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+        showToast('Modo de edição reativado');
+      }
+      setTimeout(() => {
+        initPageFlip();
+      }, 100);
+    });
+
+    // Ecrã Inteiro (Fullscreen)
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {
+          showToast('Ecrã inteiro não suportado neste dispositivo.');
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+    // Toast de Notificações
+    let toastTimer = null;
+    function showToast(text) {
+      const toast = document.getElementById('toastMessage');
+      const toastText = document.getElementById('toastText');
+      toastText.textContent = text;
+      toast.classList.remove('opacity-0', 'translate-y-20');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-20');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2600);
+    }
+
+    // Redimensionamento Inteligente da Janela
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        initPageFlip();
+      }, 250);
+    });
+
+    function checkParentsUrlMode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isParentsMode = urlParams.get('modo') === 'pais' || window.location.hash === '#pais';
+
+      const creatorPanel = document.getElementById('creatorPanel');
+      const toggleModeBtn = document.getElementById('toggleModeBtn');
+      const openShareModalBtn = document.getElementById('openShareModalBtn');
+      const newJournalBtn = document.getElementById('newJournalBtn');
+      const journalSelector = document.getElementById('journalSelector');
+
+      if (isParentsMode) {
+        // Ocultar painel do criador e opções de edição na vista dos pais
+        if (creatorPanel) creatorPanel.classList.add('hidden');
+        if (toggleModeBtn) toggleModeBtn.classList.add('hidden');
+        if (openShareModalBtn) openShareModalBtn.classList.add('hidden');
+        if (newJournalBtn) newJournalBtn.classList.add('hidden');
+        if (journalSelector) journalSelector.classList.add('hidden');
+        isReaderMode = true;
+      } else {
+        if (creatorPanel && !isReaderMode) creatorPanel.classList.remove('hidden');
+        if (toggleModeBtn) toggleModeBtn.classList.remove('hidden');
+        if (openShareModalBtn) openShareModalBtn.classList.remove('hidden');
+        if (newJournalBtn) newJournalBtn.classList.remove('hidden');
+        if (journalSelector) journalSelector.classList.remove('hidden');
+      }
+    }
+
+    // Suporte dinâmico para mudança de modo via URL/hash
+    window.addEventListener('hashchange', () => {
+      checkParentsUrlMode();
+      setTimeout(() => {
+        initPageFlip();
+      }, 50);
+    });
+
+    /* Inicialização no Carregamento */
+    window.onload = async function() {
+      // 1. Carregar jornais guardados
+      const savedJournals = await loadJournalsFromStorage();
+      if (savedJournals && Array.isArray(savedJournals) && savedJournals.length > 0) {
+        allJournals = savedJournals;
+
+        // Atualizar textos completos de páginas que tenham ficado salvas apenas com números de página
+        allJournals.forEach(j => {
+          if (j.pages && Array.isArray(j.pages)) {
+            j.pages.forEach((p, idx) => {
+              if (!p.narration || /^p[áa]gina(\s*\d+|\s*:\s*.*)?$/i.test(p.narration.trim())) {
+                const demo = demoPages.find(d => d.id === p.id) || demoPages[idx];
+                if (demo && demo.narration && (!p.src || p.src.startsWith('data:image/svg+xml'))) {
+                  p.narration = demo.narration;
+                }
+              }
+            });
+          }
+        });
+      } else {
+        // Inicializar com o jornal predefinido de exemplo
+        allJournals = [{
+          id: 'jornal_default',
+          title: 'O Nosso Jornalzinho da Primavera',
+          pages: [...demoPages]
+        }];
+      }
+
+      // 2. Verificar se o URL especifica um jornal específico (?jornal=xyz)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlJournalId = urlParams.get('jornal');
+      if (urlJournalId && allJournals.some(j => j.id === urlJournalId)) {
+        currentJournalId = urlJournalId;
+      } else {
+        const lastActive = await loadActiveJournalIdFromStorage();
+        if (lastActive && allJournals.some(j => j.id === lastActive)) {
+          currentJournalId = lastActive;
+        } else {
+          currentJournalId = allJournals[0].id;
+        }
+      }
+
+      const active = getCurrentJournal();
+      currentPages = active ? active.pages : [...demoPages];
+
+      updateJournalSelectorUI();
+      checkParentsUrlMode();
+
+      lucide.createIcons();
+      renderThumbnails();
+      initPageFlip();
+      setupQrCode();
+    };
+  </script>
+</body>
+</html>
